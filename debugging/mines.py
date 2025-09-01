@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import random
 import os
 
@@ -12,34 +11,25 @@ class Minesweeper:
     def __init__(self, width=10, height=10, mines=10):
         self.width = width
         self.height = height
-        self.total_mines = mines
         self.mines = set(random.sample(range(width * height), mines))
         self.field = [[' ' for _ in range(width)] for _ in range(height)]
         self.revealed = [[False for _ in range(width)] for _ in range(height)]
-        self.total_cells = width * height
-        self.revealed_count = 0
 
     def print_board(self, reveal=False):
         clear_screen()
-        # En-tête avec numéros de colonnes (sans préfixe)
-        print(' '.join(str(i) for i in range(self.width)))
-
+        print('  ' + ' '.join(str(i) for i in range(self.width)))
         for y in range(self.height):
-            # Numéro de ligne seul sur sa ligne
-            print(str(y))
-
-            # Contenu de la ligne
-            row_content = []
+            print(f"{y}", end=' ')
             for x in range(self.width):
                 if reveal or self.revealed[y][x]:
                     if (y * self.width + x) in self.mines:
-                        row_content.append('*')
+                        print('*', end=' ')
                     else:
                         count = self.count_mines_nearby(x, y)
-                        row_content.append(str(count) if count > 0 else ' ')
+                        print(count if count > 0 else ' ', end=' ')
                 else:
-                    row_content.append('.')
-            print(' '.join(row_content))
+                    print('.', end=' ')
+            print()
 
     def count_mines_nearby(self, x, y):
         count = 0
@@ -52,62 +42,44 @@ class Minesweeper:
         return count
 
     def reveal(self, x, y):
-        # Vérifier si les coordonnées sont valides
-        if not (0 <= x < self.width and 0 <= y < self.height):
-            return None  # Coordonnées invalides
-
-        # Si la cellule est déjà révélée, ne rien faire
-        if self.revealed[y][x]:
-            return True
-
-        # Si c'est une mine, le jeu se termine
         if (y * self.width + x) in self.mines:
             return False
-
-        # Révéler la cellule
+        if self.revealed[y][x]:
+            return True
         self.revealed[y][x] = True
-        self.revealed_count += 1
-
-        # Si il n'y a pas de mines autour, révéler les cellules adjacentes
         if self.count_mines_nearby(x, y) == 0:
             for dx in [-1, 0, 1]:
                 for dy in [-1, 0, 1]:
                     nx, ny = x + dx, y + dy
-                    if (
-                        0 <= nx < self.width and
-                        0 <= ny < self.height and
-                        not self.revealed[ny][nx]
-                    ):
-                        self.reveal(nx, ny)
-
+                    if 0 <= nx < self.width and 0 <= ny < self.height:
+                        if not self.revealed[ny][nx]:
+                            self.reveal(nx, ny)
         return True
 
-    def check_win(self):
-        """Vérifie si toutes les cellules non minées ont été révélées"""
-        return self.revealed_count == (self.total_cells - self.total_mines)
+    def has_won(self):
+        """Returns True if all non-mine cells are revealed."""
+        for y in range(self.height):
+            for x in range(self.width):
+                if ((y * self.width + x) not in self.mines and
+                        not self.revealed[y][x]):
+
+                    return False
+        return True
 
     def play(self):
         while True:
             self.print_board()
-
             try:
                 x = int(input("Enter x coordinate: "))
                 y = int(input("Enter y coordinate: "))
-
-                result = self.reveal(x, y)
-
-                if result is None:
-                    print("Invalid coordinates!")
-                    continue
-                elif result is False:
+                if not self.reveal(x, y):
                     self.print_board(reveal=True)
                     print("Game Over! You hit a mine.")
                     break
-                elif self.check_win():
-                    self.print_board()
+                elif self.has_won():
+                    self.print_board(reveal=True)
                     print("Congratulations! You've won the game.")
                     break
-
             except ValueError:
                 print("Invalid input. Please enter numbers only.")
 
